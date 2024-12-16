@@ -107,7 +107,9 @@ static void draw_triangle(
   vec3_t b = v3sub(tri->points[1], tri->points[0]);
   vec3_t normal = v3normalize(v3cross(a, b));
   /* Cull if possible */
-  if (normal.z < 0) return;
+  /* Backface culling */
+  if (v3dot(normal, V3_FROM(0, 0, 1)) < 0) return;
+  /* Cull behind camera */
   for (uint32_t i = 0; i < 3; i++) {
     if (tri->points[i].z > 0) return;
   }
@@ -257,12 +259,15 @@ void renderer_draw(renderer_t *renderer, mesh_t *mesh) {
   /* Draw */
   for (uint32_t i = 0; i < mesh->num_tris; i++) {
     tri_t tri = mesh->tris[i];
+    /* Transform */
     tri_transform(&tri, mesh->translate, mesh->scale, mesh->rotate);
+    /* Apply camera matrix */
     apply_matrix(&tri, m4x4_look_at(
       renderer->camera.pos,
       v3add(renderer->camera.pos, renderer->camera.forward),
       renderer->camera.up
     ));
+    /* Draw */
     draw_triangle(renderer, &tri);
   }
 }
